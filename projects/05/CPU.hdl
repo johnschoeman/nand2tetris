@@ -72,7 +72,7 @@ CHIP CPU {
     And(a=j123, b=instruction[15], out=jumpout);
 
     // PC
-    PC(in[0..14]=aregout, in[15]=true, load=jumpout, inc=true, reset=reset, out[0..14]=pc);
+    PC(in[0..14]=aregout, load=jumpout, inc=true, reset=reset, out[0..14]=pc);
 
     // WriteM
     And(a=instruction[3], b=instruction[15], out=writeM);
