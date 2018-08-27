@@ -26,7 +26,6 @@
  */
 
 CHIP CPU {
-
     IN  inM[16],         // M value input  (M = contents of RAM[A])
         instruction[16], // Instruction for execution
         reset;           // Signals whether to re-start the current
@@ -34,10 +33,47 @@ CHIP CPU {
                          // the current program (reset==0).
 
     OUT outM[16],        // M value output
-        writeM,          // Write to M? 
+        writeM,          // Write to M?
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // A or C Instruction Control
+    Not(in=instruction[15], out=nota);
+    Or(a=instruction[5], b=nota, out=ora);
+    Mux16(a=aluout, b=instruction, sel=nota, out[0..15]=instmuxout);
+    ARegister(in=instmuxout, load=ora, out[0..14]=addressM[0..14], out[0..14]=aregout);
+
+    // InM: Use A Register or M[A]
+    Mux16(a[0..14]=aregout, b=inM, sel=instruction[12], out=amout);
+
+    // DReg: Set D to ALU out or Not
+    And(a=instruction[4], b=instruction[15], out=andd);
+    DRegister(in=aluout, load=andd, out=dregout);
+
+    ALU(x=dregout, y=amout,
+      zx=instruction[11],
+      nx=instruction[10],
+      zy=instruction[9],
+      ny=instruction[8],
+      f=instruction[7],
+      no=instruction[6],
+      out=aluout, out=outM, zr=aluzr, ng=alung);
+
+    // Jump Control
+    And(a=instruction[2], b=alung, out=j1);
+    And(a=instruction[1], b=aluzr, out=j2);
+    Not(in=alung, out=notng);
+    And(a=instruction[0], b=notng, out=j3);
+    Not(in=aluzr, out=notzr);
+    And(a=j3, b=notzr, out=jgt);
+    Or(a=j1, b=j2, out=j12);
+    Or(a=j12, b=jgt, out=j123);
+    And(a=j123, b=instruction[15], out=jumpout);
+
+    // PC
+    PC(in[0..14]=aregout, in[15]=true, load=jumpout, inc=true, reset=reset, out[0..14]=pc);
+
+    // WriteM
+    And(a=instruction[3], b=instruction[15], out=writeM);
 }
