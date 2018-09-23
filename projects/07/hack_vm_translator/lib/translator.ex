@@ -1,0 +1,79 @@
+defmodule Translator do
+  def translate(program_path) do
+    hack_file_path = create_hack_file_path(program_path)
+    file_name = get_file_name(program_path)
+
+    {:ok, counter_pid} = Counter.start_link(0)
+
+    File.stream!(program_path)
+    |> Stream.map(&translate_line(&1, file_name, counter_pid))
+    |> Stream.into(File.stream!(hack_file_path))
+    |> Stream.run()
+  end
+
+  defp create_hack_file_path(path) do
+    String.replace_trailing(path, ".vm", ".asm")
+  end
+
+  defp get_file_name(program_path) do
+    program_path
+    |> String.split("/")
+    |> List.last
+    |> String.replace_trailing(".vm", "")
+  end
+
+  defp translate_line(line, file_name, counter_pid) do
+    IO.puts(line)
+    cond do
+      is_a_comment?(line) ->
+        ""
+      true ->
+        Counter.increment(counter_pid)
+        replace_with_assembly(line, file_name, counter_pid)
+    end
+  end
+
+  def is_a_comment?(line) do
+    String.match?(line, ~r/^\/\//) || String.match?(line, ~r/^\n/)
+  end
+
+  defp replace_with_assembly(line, file_name, counter_pid) do
+    count = Counter.state(counter_pid)
+    case parse_command(line) do
+      ["push", "static", x | _tail] ->
+        Commands.push_static(file_name, x)
+      ["pop", "static", x | _tail] ->
+        Commands.pop_static(file_name, x)
+      ["push", segment, x | _tail] ->
+        Commands.push_segment(segment, x)
+      ["pop", segment, x | _tail] ->
+        Commands.pop_segment(segment, x)
+      ["add" | _tail] ->
+        Commands.add()
+      ["sub" | _tail] ->
+        Commands.sub()
+      ["and" | _tail] ->
+        Commands.and_command()
+      ["or" | _tail] ->
+        Commands.or_command()
+      ["not" | _tail] ->
+        Commands.not_command()
+      ["neg" | _tail] ->
+        Commands.neg()
+      ["eq" | _tail] ->
+        Commands.eq(count)
+      ["lt" | _tail] ->
+        Commands.lt(count)
+      ["gt" | _tail] ->
+        Commands.gt(count)
+      _ ->
+        IO.puts "UNKNOWN COMMAND: #{line}"
+    end
+  end
+
+  defp parse_command(line) do
+    line
+    |> String.trim
+    |> String.split(" ")
+  end
+end

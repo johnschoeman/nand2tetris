@@ -1,0 +1,4 @@
+push constant 12
+neg
+push constant 311
+neg

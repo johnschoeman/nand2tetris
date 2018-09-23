@@ -1,0 +1,9 @@
+push constant 7
+push constant 8
+push constant 9
+pop static 0
+pop static 1
+pop static 2
+push static 0
+push static 1
+push static 2
