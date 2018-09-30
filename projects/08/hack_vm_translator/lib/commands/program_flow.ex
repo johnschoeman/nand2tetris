@@ -1,5 +1,4 @@
-defmodule Commands do
-  defmodule ProgramFlow do
+  defmodule Commands.ProgramFlow do
     def label(label) do
       "label"
     end
@@ -12,4 +11,3 @@ defmodule Commands do
       "goto"
     end
   end
-end

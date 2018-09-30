@@ -47,31 +47,31 @@ defmodule Translator do
     count = Counter.state(counter_pid)
     case parse_command(line) do
       ["push", "static", x | _tail] ->
-        Commands.push_static(file_name, x)
+        Commands.Memory.push_static(file_name, x)
       ["pop", "static", x | _tail] ->
-        Commands.pop_static(file_name, x)
+        Commands.Memory.pop_static(file_name, x)
       ["push", segment, x | _tail] ->
-        Commands.push_segment(segment, x)
+        Commands.Memory.push_segment(segment, x)
       ["pop", segment, x | _tail] ->
-        Commands.pop_segment(segment, x)
+        Commands.Memory.pop_segment(segment, x)
       ["add" | _tail] ->
-        Commands.add()
+        Commands.Arithmetic.add()
       ["sub" | _tail] ->
-        Commands.sub()
+        Commands.Arithmetic.sub()
       ["and" | _tail] ->
-        Commands.and_command()
+        Commands.Arithmetic.and_command()
       ["or" | _tail] ->
-        Commands.or_command()
+        Commands.Arithmetic.or_command()
       ["not" | _tail] ->
-        Commands.not_command()
+        Commands.Arithmetic.not_command()
       ["neg" | _tail] ->
-        Commands.neg()
+        Commands.Arithmetic.neg()
       ["eq" | _tail] ->
-        Commands.eq(count)
+        Commands.Arithmetic.eq(count)
       ["lt" | _tail] ->
-        Commands.lt(count)
+        Commands.Arithmetic.lt(count)
       ["gt" | _tail] ->
-        Commands.gt(count)
+        Commands.Arithmetic.gt(count)
       _ ->
         IO.puts "UNKNOWN COMMAND: #{line}"
     end
