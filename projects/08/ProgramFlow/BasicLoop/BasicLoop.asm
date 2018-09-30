@@ -20,7 +20,8 @@ D=M
 @R13
 A=M
 M=D
-label// push ARG 0
+(LOOP_START)
+// push ARG 0
 @0
 D=A
 @ARG
@@ -112,7 +113,13 @@ A=M
 M=D
 @SP
 M=M+1
-if goto// push LCL 0
+// if-goto LOOP_START
+@SP
+AM=M-1
+D=M
+@LOOP_START
+D;JNE
+// push LCL 0
 @0
 D=A
 @LCL
