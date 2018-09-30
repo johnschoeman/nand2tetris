@@ -26,12 +26,19 @@ defmodule Translator do
     IO.puts(line)
     cond do
       is_a_comment?(line) ->
-        ""
+        remove_comment()
       is_program_flow?(line) ->
         translate_program_flow(line)
+      is_function_call?(line) ->
+        translate_function_call(line)
+      is_memory_management?(line) ->
+        translate_memory_management(line, file_name)
+      is_arithmetic?(line) ->
+        translate_arithmetic(line)
+      is_comparison?(line) ->
+        translate_comparison(line, counter_pid)
       true ->
-        Counter.increment(counter_pid)
-        replace_with_assembly(line, file_name, counter_pid)
+        IO.puts "UNKNOWN COMMAND: '#{line}'"
     end
   end
 
@@ -43,17 +50,28 @@ defmodule Translator do
     String.match?(line, ~r/label|if-goto|goto/)
   end
 
-  defp replace_with_assembly(line, file_name, counter_pid) do
-    count = Counter.state(counter_pid)
+  defp is_memory_management?(line) do
+    String.match?(line, ~r/push|pop/)
+  end
+
+  defp is_function_call?(line) do
+    String.match?(line, ~r/function|call|return/)
+  end
+
+  defp is_arithmetic?(line) do
+    String.match?(line, ~r/add|sub|and|or|not|neg/)
+  end
+
+  defp is_comparison?(line) do
+    String.match?(line, ~r/eq|gt|lt/)
+  end
+
+  defp remove_comment() do
+    ""
+  end
+
+  defp translate_arithmetic(line) do
     case parse_command(line) do
-      ["push", "static", x | _tail] ->
-        Commands.Memory.push_static(file_name, x)
-      ["pop", "static", x | _tail] ->
-        Commands.Memory.pop_static(file_name, x)
-      ["push", segment, x | _tail] ->
-        Commands.Memory.push_segment(segment, x)
-      ["pop", segment, x | _tail] ->
-        Commands.Memory.pop_segment(segment, x)
       ["add" | _tail] ->
         Commands.Arithmetic.add()
       ["sub" | _tail] ->
@@ -66,14 +84,31 @@ defmodule Translator do
         Commands.Arithmetic.not_command()
       ["neg" | _tail] ->
         Commands.Arithmetic.neg()
+    end
+  end
+
+  defp translate_comparison(line, counter_pid) do
+    count = Counter.increment(counter_pid)
+    case parse_command(line) do
       ["eq" | _tail] ->
         Commands.Arithmetic.eq(count)
       ["lt" | _tail] ->
         Commands.Arithmetic.lt(count)
       ["gt" | _tail] ->
         Commands.Arithmetic.gt(count)
-      _ ->
-        IO.puts "UNKNOWN COMMAND: #{line}"
+    end
+  end
+
+  defp translate_memory_management(line, file_name) do
+    case parse_command(line) do
+      ["push", "static", x | _tail] ->
+        Commands.Memory.push_static(file_name, x)
+      ["pop", "static", x | _tail] ->
+        Commands.Memory.pop_static(file_name, x)
+      ["push", segment, x | _tail] ->
+        Commands.Memory.push_segment(segment, x)
+      ["pop", segment, x | _tail] ->
+        Commands.Memory.pop_segment(segment, x)
     end
   end
 
@@ -85,6 +120,17 @@ defmodule Translator do
         Commands.ProgramFlow.if_goto(label)
       ["goto", label | _tail] ->
         Commands.ProgramFlow.goto(label)
+    end
+  end
+
+  defp translate_function_call(line) do
+    case parse_command(line) do
+      ["function", function_name, num_vars | _tail ] ->
+        Commands.FunctionCall.function(function_name, num_vars)
+      ["call", function_name, num_args | _tail] ->
+        Commands.FunctionCall.call(function_name, num_args)
+      ["return" | _tail] ->
+        Commands.FunctionCall.return()
     end
   end
 
