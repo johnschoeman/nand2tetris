@@ -24,46 +24,39 @@ defmodule Translator do
 
   defp translate_line(line, file_name, counter_pid) do
     IO.puts(line)
-    cond do
-      is_a_comment?(line) ->
+    case command_type(line) do
+      :COMMENT ->
         remove_comment()
-      is_program_flow?(line) ->
+      :C_PROGRAM_FLOW ->
         translate_program_flow(line)
-      is_function_call?(line) ->
+      :C_FUNCTION ->
         translate_function_call(line)
-      is_memory_management?(line) ->
+      :C_MEMORY ->
         translate_memory_management(line, file_name)
-      is_arithmetic?(line) ->
+      :C_ARITHMETIC ->
         translate_arithmetic(line)
-      is_comparison?(line) ->
+      :C_COMPARISON ->
         translate_comparison(line, counter_pid)
-      true ->
+      _ ->
         IO.puts "UNKNOWN COMMAND: '#{line}'"
     end
   end
 
-  defp is_a_comment?(line) do
-    String.match?(line, ~r/^\/\//) || String.match?(line, ~r/^\n/)
-  end
-
-  defp is_program_flow?(line) do
-    String.match?(line, ~r/label|if-goto|goto/)
-  end
-
-  defp is_memory_management?(line) do
-    String.match?(line, ~r/push|pop/)
-  end
-
-  defp is_function_call?(line) do
-    String.match?(line, ~r/function|call|return/)
-  end
-
-  defp is_arithmetic?(line) do
-    String.match?(line, ~r/add|sub|and|or|not|neg/)
-  end
-
-  defp is_comparison?(line) do
-    String.match?(line, ~r/eq|gt|lt/)
+  defp command_type(line) do
+    cond do
+      String.match?(line, ~r/^\/\/|^\n/) ->
+        :COMMENT
+      String.match?(line, ~r/label|if-goto|goto/) ->
+        :C_PROGRAM_FLOW
+      String.match?(line, ~r/push|pop/) ->
+        :C_MEMORY
+      String.match?(line, ~r/function|call|return/) ->
+        :C_FUNCTION
+      String.match?(line, ~r/add|sub|and|or|not|neg/) ->
+        :C_ARITHMETIC
+      String.match?(line, ~r/eq|gt|lt/) ->
+        :C_COMPARISON
+    end
   end
 
   defp remove_comment() do
